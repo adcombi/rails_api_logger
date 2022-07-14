@@ -13,13 +13,27 @@ class RequestLog < ActiveRecord::Base
 
   def self.from_request(request, loggable: nil)
     request_body = (request.body.respond_to?(:read) ? request.body.read : request.body)
-    body = request_body ? request_body.dup.force_encoding("UTF-8") : nil
+
+    switch_tenant(request)
+
+    body = request_body ? request_body.dup.force_encoding('UTF-8').encode('UTF-8', invalid: :replace) : nil
+
     begin
       body = JSON.parse(body) if body.present?
     rescue JSON::ParserError
       body
     end
     create(path: request.path, request_body: body, method: request.method, started_at: Time.current, loggable: loggable)
+  end
+
+  def self.switch_tenant(request)
+    bearer_token = request&.each_header.to_h['HTTP_AUTHORIZATION'].gsub('Bearer ', '')
+    access_token = Doorkeeper::AccessToken.find_by(token: bearer_token)
+    resource_owner = User.find(access_token.resource_owner_id) unless access_token.expired?
+    tenant = resource_owner.current_tenant
+    tenant.switch!
+  rescue
+    Apartment::Tenant.switch! 'public'
   end
 
   def from_response(response)

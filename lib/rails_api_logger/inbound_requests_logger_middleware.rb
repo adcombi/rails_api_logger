@@ -40,7 +40,7 @@ class InboundRequestsLoggerMiddleware
       body
     end
   rescue JSON::ParserError
-    body
+    {}
   end
 
   def request_with_state_change?(request)
