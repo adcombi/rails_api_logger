@@ -1,4 +1,5 @@
 class InboundRequestLog < RequestLog
+  require 'bcrypt'
 
   def request_body=(val)
     if val.with_indifferent_access.key? :password
