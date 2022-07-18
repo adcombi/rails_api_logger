@@ -1,6 +1,7 @@
 class CreateRailsApiLoggerTable < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
   def change
     create_table :inbound_request_logs do |t|
+      t.uuid :uuid, default: "uuid_generate_v4()"
       t.string :method
       t.string :path
       t.text :request_body
