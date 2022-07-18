@@ -10,6 +10,7 @@ class RequestLog < ActiveRecord::Base
 
   validates :method, presence: true
   validates :path, presence: true
+  validates :uuid, presence: true
 
   def self.from_request(request, loggable: nil)
     request_body = (request.body.respond_to?(:read) ? request.body.read : request.body)
@@ -23,7 +24,7 @@ class RequestLog < ActiveRecord::Base
     rescue JSON::ParserError
       body
     end
-    create(path: request.path, request_body: body, method: request.method, started_at: Time.current, loggable: loggable)
+    create(path: request.path, request_body: body, method: request.method, started_at: Time.current, loggable: loggable, uuid: SecureRandom.uuid)
   end
 
   def self.switch_tenant(request)
