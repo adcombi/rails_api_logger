@@ -19,6 +19,7 @@ class InboundRequestsLoggerMiddleware
       env["INBOUND_REQUEST_LOG"].update(response_body: parsed_body(body),
                                         response_code: status,
                                         ended_at: Time.current)
+      headers.merge!({ 'Request-Id' => env["INBOUND_REQUEST_LOG"].uuid })
     end
     [status, headers, body]
   end
