@@ -16,9 +16,9 @@ class InboundRequestsLoggerMiddleware
     end
     status, headers, body = @app.call(env)
     if logging
-      env["INBOUND_REQUEST_LOG"].update_columns(response_body: parsed_body(body),
-                                                response_code: status,
-                                                ended_at: Time.current)
+      env["INBOUND_REQUEST_LOG"].update(response_body: parsed_body(body),
+                                        response_code: status,
+                                        ended_at: Time.current)
     end
     [status, headers, body]
   end
