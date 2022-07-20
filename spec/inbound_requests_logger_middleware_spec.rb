@@ -18,6 +18,8 @@ class MyApp
 end
 
 RSpec.describe InboundRequestsLoggerMiddleware do
+  before { allow(InboundRequestLog).to receive(:switch_tenant).and_return(nil) }
+
   it "logs a request in the database" do
     app = InboundRequestsLoggerMiddleware.new(MyApp.new)
     request = Rack::MockRequest.new(app)
