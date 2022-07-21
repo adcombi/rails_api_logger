@@ -30,6 +30,7 @@ def database_setup
 
   ActiveRecord::Schema.define do
     create_table :inbound_request_logs do |t|
+      t.text :uuid
       t.string :method
       t.string :path
       t.text :request_body
@@ -42,6 +43,7 @@ def database_setup
     end
 
     create_table :outbound_request_logs do |t|
+      t.text :uuid
       t.string :method
       t.string :path
       t.text :request_body

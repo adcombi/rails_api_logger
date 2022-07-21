@@ -28,6 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "actionpack", ">= 4.1.0"
   spec.add_dependency "nokogiri"
   spec.add_dependency "zeitwerk", ">= 2.0.0"
+  spec.add_dependency "bcrypt"
 
   spec.add_development_dependency "sqlite3", "~> 1.4.0"
   spec.add_development_dependency "standard", "~> 0.13.0"
