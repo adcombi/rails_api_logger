@@ -38,5 +38,7 @@ RSpec.describe InboundRequestsLoggerMiddleware do
     expect(inbound_request_log.duration).to be > 0
     expect(inbound_request_log.loggable_type).to eq("Book")
     expect(inbound_request_log.loggable_id).to be_present
+    expect(response.headers).to have_key("Request-Id")
+    expect(response.headers["Request-Id"]).to eq(inbound_request_log.uuid)
   end
 end
