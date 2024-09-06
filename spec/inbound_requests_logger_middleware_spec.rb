@@ -22,8 +22,8 @@ class MyApp
   end
 end
 
-RSpec.describe InboundRequestsLoggerMiddleware do\  before { allow(InboundRequestLog).to receive(:switch_tenant).and_return(nil) }
-before { allow(InboundRequestLog).to receive(:switch_tenant).and_return(nil) }
+RSpec.describe InboundRequestsLoggerMiddleware do
+  before { allow(InboundRequestLog).to receive(:switch_tenant).and_return(nil) }
 
 let(:skip_body_regexp) { nil }
   let(:app) do
