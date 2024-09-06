@@ -71,13 +71,40 @@ log.save!
 You can also use the provided logger class to do that in a simpler and safer manner:
 
 ```ruby
-uri = URI('http://example.com/some_path?query=string')
-http = Net::HTTP.new(uri.host, uri.port)
-request = Net::HTTP::Get.new(uri)
-response = RailsApiLogger.new.call(uri, request) { http.start { |http| http.request(request) } }
+uri = URI('https://example.com/some_path')
+request = Net::HTTP::Post.new(uri)
+request.body = { answer: 42 }.to_json
+request.content_type = 'application/json'
+
+response = RailsApiLogger.new.call(nil, request) do
+  Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+end
 ``` 
 
 This will guarantee that the log is always persisted, even in case of errors.
+
+### Database Transactions Caveats
+
+If you log your outbound requests inside of parent app transactions, your logs will not be persisted if
+the transaction is rolled-back. You can circumvent that by opening another database connection
+to the same (or another database if you're into that stuff) when logging.
+
+```
+# config/initializers/outbound_request_log_patch.rb
+
+module OutboundRequestLogTransactionPatch
+  extend ActiveSupport::Concern
+
+  included do
+    connects_to database: { writing: :primary, reading: :primary }
+  end
+end
+
+OutboundRequestLog.include(OutboundRequestLogTransactionPatch)
+```
+
+You can also log the request in a separate thread to provoke the checkout of a separate database connection.
+Have a look at [this example here](https://github.com/renuo/rails_api_logger/blob/28d4ced88fea5a5f4fd72f5a1db42ad4734eb547/spec/outbound_request_log_spec.rb#L28-L30).
 
 ## Log Inbound Requests
 
@@ -85,26 +112,31 @@ If you are exposing some API you might be interested in logging the requests you
 You can do so by adding this middleware in `config/application.rb`
 
 ```ruby
-config.middleware.insert_before Rails::Rack::Logger, InboundRequestLoggerMiddleware
+config.middleware.insert_before Rails::Rack::Logger, InboundRequestsLoggerMiddleware
 ``` 
 
 this will by default only log requests that have an impact in your system (POST, PUT, and PATCH calls).
 If you want to log all requests (also GET ones) use
 
 ```ruby
-config.middleware.insert_before Rails::Rack::Logger, InboundRequestLoggerMiddleware, only_state_change: false
+config.middleware.insert_before Rails::Rack::Logger, InboundRequestsLoggerMiddleware, only_state_change: false
 ```
 
 If you want to log only requests on a certain path, you can pass a regular expression:
 
 ```ruby
-config.middleware.insert_before Rails::Rack::Logger, InboundRequestLoggerMiddleware, path_regexp: /api/
+config.middleware.insert_before Rails::Rack::Logger, InboundRequestsLoggerMiddleware, path_regexp: /api/
+```
+
+If you want to skip logging the body of certain requests, you can pass a regular expression:
+
+```ruby
+config.middleware.insert_before Rails::Rack::Logger, InboundRequestsLoggerMiddleware, skip_body_regexp: /api/letters/
 ```
 
 
 In the implementation of your API, you can call any time `attach_inbound_request_loggable(model)`
 to attach an already persisted model to the log record.
-
 
 
 For example:
@@ -169,6 +201,7 @@ This configuration will give you some nice views, and searches to work with the 
   end
 end
 ```
+
 
 ## Development
 

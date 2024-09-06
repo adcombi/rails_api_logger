@@ -3,7 +3,7 @@ name: rails_api_logger
 agent:
   machine:
     type: e1-standard-2
-    os_image: ubuntu1804
+    os_image: ubuntu2004
 auto_cancel:
   running:
     when: "true"
@@ -21,6 +21,7 @@ blocks:
           - cache restore
           - bundle config set path 'vendor/bundle'
           - bundle install -j 4
+          - sem-service start postgres 14 --username=semaphore
           - cache store
       jobs:
         - name: tests
