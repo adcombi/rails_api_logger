@@ -13,11 +13,12 @@ class RequestLog < ActiveRecord::Base
   validates :uuid, presence: true
 
   def self.from_request(request, loggable: nil)
-    request_body = (request.body.respond_to?(:read) ? request.body.read : request.body)
+    raw = (request.body.respond_to?(:read) ? request.body.read : request.body)
+    raw = "" if raw.nil?
     switch_tenant(request)
-    body = request_body&.dup&.force_encoding("UTF-8")
+    body = raw.is_a?(String) ? raw.dup.force_encoding("UTF-8") : raw
     begin
-      body = JSON.parse(body) if body.present?
+      body = JSON.parse(body) if body.is_a?(String) && !body.empty?
     rescue JSON::ParserError
       body
     end
@@ -25,13 +26,34 @@ class RequestLog < ActiveRecord::Base
   end
 
   def self.switch_tenant(request)
-    bearer_token = request&.each_header.to_h['HTTP_AUTHORIZATION'].gsub('Bearer ', '')
-    access_token = Doorkeeper::AccessToken.find_by(token: bearer_token)
-    resource_owner = User.find(access_token.resource_owner_id) unless access_token.expired?
-    tenant = resource_owner.current_tenant
-    tenant.switch!
-  rescue
-    Apartment::Tenant.switch! 'public'
+    # Only attempt tenant switching if required libraries are present
+    return unless defined?(Doorkeeper) && defined?(Apartment)
+
+    auth_header = nil
+    begin
+      auth_header = request&.each_header&.to_h&.fetch('HTTP_AUTHORIZATION', nil)
+    rescue
+      auth_header = nil
+    end
+
+    unless auth_header
+      Apartment::Tenant.switch! 'public'
+      return
+    end
+
+    begin
+      bearer_token = auth_header.to_s.gsub('Bearer ', '')
+      access_token = Doorkeeper::AccessToken.find_by(token: bearer_token)
+      if access_token && !access_token.expired?
+        resource_owner = User.find(access_token.resource_owner_id)
+        tenant = resource_owner.current_tenant
+        tenant.switch!
+      else
+        Apartment::Tenant.switch! 'public'
+      end
+    rescue
+      Apartment::Tenant.switch! 'public'
+    end
   end
 
   def from_response(response, skip_body: false)

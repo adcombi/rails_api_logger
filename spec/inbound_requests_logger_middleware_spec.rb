@@ -42,10 +42,10 @@ let(:skip_body_regexp) { nil }
     it "logs a request in the database" do
       expect(response.status).to eq(200)
       expect(response.body).to eq("Hello World")
+      inbound_request_log = InboundRequestLog.first
       expect(response.headers).to have_key("Request-Id")
       expect(response.headers["Request-Id"]).to eq(inbound_request_log.uuid)
       expect(InboundRequestLog.count).to eq(1)
-      inbound_request_log = InboundRequestLog.first
       expect(inbound_request_log.method).to eq("POST")
       expect(inbound_request_log.path).to eq("/api/v1/books")
       expect(inbound_request_log.request_body).to eq("")

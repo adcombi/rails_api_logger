@@ -1,6 +1,7 @@
 require "bundler/setup"
 require "net/http"
 require "rails_api_logger"
+require "fileutils"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
